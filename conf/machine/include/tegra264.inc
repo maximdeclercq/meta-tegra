@@ -26,6 +26,7 @@ TEGRA_CUDA_ARCHITECTURE ?= "110"
 
 TEGRA_FLASHVAR_BR_CMD_CONFIG ?= ""
 TEGRA_FLASHVAR_FSIFW ?= ""
+TEGRA_FLASHVARS:append = " BCTFILE BPMP_MEM_CONFIG DTB_FILE"
 
 require conf/machine/include/tegra-common.inc
 
