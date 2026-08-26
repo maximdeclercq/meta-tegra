@@ -1,0 +1,58 @@
+From 8171d62d0ce2d29932996253a932c4a2493d1545 Mon Sep 17 00:00:00 2001
+From: Maxim De Clercq <maximdeclercq00@gmail.com>
+Date: Wed, 26 Aug 2026 17:02:21 +0200
+Subject: [PATCH] Do not kill a shared adb server when flashing several boards
+
+A host runs one adb server per port and it drives every attached board,
+so the kill-server in RestartAdbServer tears down the server that other
+concurrent flashes are pushing through. Both callers reach it after a
+device lookup has timed out, which says nothing about the server's
+health, so on a shared server the destructive path fires on a case that
+is not a broken server at all.
+
+Skip the kill only when the caller has declared the server shared and
+the server still answers. Without BOOTBURN_ADB_SHARED_SERVER set the
+path is unchanged, so a single-board flash keeps the existing recovery.
+
+Upstream-Status: Pending
+
+Signed-off-by: Maxim De Clercq <maximdeclercq00@gmail.com>
+---
+ .../tools/flashtools/bootburn_t264_py/bootburn_adb.py    | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/unified_flash/tools/flashtools/bootburn_t264_py/bootburn_adb.py b/unified_flash/tools/flashtools/bootburn_t264_py/bootburn_adb.py
+index 2f7e9b0..fe94bb0 100644
+--- a/unified_flash/tools/flashtools/bootburn_t264_py/bootburn_adb.py
++++ b/unified_flash/tools/flashtools/bootburn_t264_py/bootburn_adb.py
+@@ -226,10 +226,17 @@ class bootburn_adb(object):
+     def RestartAdbServer(self, sudoRequired):
+         sudo = ""
+         if (sudoRequired == True):
+             sudo = "sudo -E "
+ 
++        # other concurrent flashes share this server, so killing it would drop theirs
++        if (os.environ.get("BOOTBURN_ADB_SHARED_SERVER") == "1"):
++            probe = sudo + "timeout 5 " + self.f_AdbTool + " devices"
++            if (self.shellUtils.executeShellCommand(probe) == nverror.NvError_Success):
++                self.log("ADB server is shared and responsive, leaving it running")
++                return
++
+         self.log("Killing the ADB server...")
+         adbCommand = sudo + self.f_AdbTool + " kill-server"
+         self.log(self.shellUtils.executeShellCommand(adbCommand, True))
+         time.sleep(2)
+         self.log("Re-starting the ADB server after killing...")
+@@ -287,11 +294,11 @@ class bootburn_adb(object):
+                 if (not self.targetConfig.d_ProcessInfo["child"]):
+                     search_device = False
+                     self.RestartAdbServer(sudoRequired)
+                     result = self.AdbFindDevice(timeout_max, sudo)
+                     if (result != nverror.NvError_Success):
+-                        self.vlog("Could not find a device online, after killing and re-starting ADBserver")
++                        self.vlog("Could not find a device online, after re-checking the ADB server")
+                         AbnormalTermination("${s_ERROR_ADB_TIMEOUT}", nverror.NvError_Timeout)
+                 else:
+                     self.targetConfig.d_ProcessInfo["ctpQueue"].put(False)
+                     search_device = self.targetConfig.d_ProcessInfo["ptcQueue"].get()
+             else:

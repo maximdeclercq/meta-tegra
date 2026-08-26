@@ -799,9 +799,14 @@ elif [ "$CHIPID" = "0x26" ]; then
     ./create_l4t_bsp_images.py $convargs --dest $PWD/out/flash_workspace/flash-images
     ./create_l4t_bsp_images.py $convargs --dest $PWD/out/flash_workspace/rcm-boot --rcm-boot
     cp -R out/flash_workspace/rcm-boot out/flash_workspace/rcm-flash
+    # pin a server this flash owns, and tell bootburn when several boards share it
+    adb_env="export ANDROID_ADB_SERVER_PORT=${ANDROID_ADB_SERVER_PORT:-61037}"
+    [ -z "$instance_args" ] || adb_env="$adb_env
+export BOOTBURN_ADB_SHARED_SERVER=1"
     cat > out/doflash.sh <<EOF
 here=\$(readlink -f \$(dirname "\$0"))
 oldwd="\$PWD"
+$adb_env
 "\$here/tools/flashtools/bootburn/flash_bsp_images.py" -b jetson-t264 --l4t -P "\$here/flash_workspace" $instance_args "\$@"
 rc=\$?
 cd "\$oldwd"
