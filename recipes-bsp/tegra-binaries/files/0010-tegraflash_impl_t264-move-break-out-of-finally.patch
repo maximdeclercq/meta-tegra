@@ -1,0 +1,41 @@
+From fe6efe3cdb281275b2703bebb84ff92519109066 Mon Sep 17 00:00:00 2001
+From: Maxim De Clercq <maximdeclercq00@gmail.com>
+Date: Thu, 3 Sep 2026 09:34:25 +0200
+Subject: [PATCH] Move break out of the finally blocks in the uphy odm handling
+
+Python 3.14 warns on a break inside a finally block, so parsing
+tegraflash_impl_t264.py prints two SyntaxWarnings on every flash. The
+bare except above each block already swallows every exception the try
+can raise, so the finally never discards a pending one and running the
+break after the handler keeps the loop behavior identical.
+
+Upstream-Status: Pending
+Signed-off-by: Maxim De Clercq <maximdeclercq00@gmail.com>
+---
+ bootloader/tegraflash_impl_t264.py | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/bootloader/tegraflash_impl_t264.py b/bootloader/tegraflash_impl_t264.py
+index 20b6ad5..e5a54bd 100755
+--- a/bootloader/tegraflash_impl_t264.py
++++ b/bootloader/tegraflash_impl_t264.py
+@@ -2173,8 +2173,7 @@ class TFlashT264_Base(object):
+                             found = True
+                         except:
+                             pass
+-                        finally:
+-                            break
++                        break
+                     elif misc == prop:
+                         misc_node_str = '/uphy/' + misc
+                         misc_node = fdt.resolve_path(misc_node_str)
+@@ -2192,8 +2191,7 @@ class TFlashT264_Base(object):
+                             uphy_node.remove(cfg)
+                         except:
+                             pass
+-                        finally:
+-                            break
++                        break
+                     elif prop.startswith(cfg) and re.match(r'{}-\d+$'.format(cfg), prop):
+                         try:
+                             uphy_node.remove(cfg)

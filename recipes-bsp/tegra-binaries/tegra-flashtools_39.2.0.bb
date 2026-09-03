@@ -12,6 +12,7 @@ SRC_URI = "\
     file://0007-Fix-bootburn_t264_py-path-in-tegraflash.py.patch \
     file://0008-bootburn-force-fork-start-method.patch \
     file://0009-bootburn_adb-do-not-kill-a-shared-adb-server.patch \
+    file://0010-tegraflash_impl_t264-move-break-out-of-finally.patch \
 "
 SRC_URI[sha256sum] = "1626626cd827de0e350b8802033b9da653c69b2290accedb9e5d01f49607e099"
 
